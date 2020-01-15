@@ -3,6 +3,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import InvalidArgumentException
 # from selenium.webdriver.chrome.options import Options
 from urllib.parse import urlparse
+import sys
 import time
 import os
 
@@ -38,7 +39,8 @@ def get_correct_file_name(elements):
 def main():
     print("Please enter url: ")
     urlList = parseUrl()
-    target_dl_folder_path = r"C:\Temp"    # target download folder path
+    target_dl_folder_path = r"C:\Temp"
+    # target_dl_folder_path = r"D:\Temp\H"    # target download folder path
 
     # chrome_options = Options()
     chrome_options = webdriver.ChromeOptions()
@@ -96,27 +98,26 @@ def main():
         
         # START while
         while progressbar != "100":
-            time.sleep(1)
             progressbar = driver.find_element_by_id("progressbar").get_attribute("aria-valuenow")
-            print(progressbar, "%", end = '\r')
+            sys.stdout.write("\r{0}".format(str(progressbar) + " %"))
+            sys.stdout.flush()
+            time.sleep(0.5)
         # END while
-        time.sleep(2)
-        # download complete
 
-        # START IF check file exists
-        if os.path.exists(target_dl_folder_path + "\\" + old_file_name + ".zip"):
-            print(old_file_name + ".zip file exists")
-            # replace file name
-            try:
-                os.rename(target_dl_folder_path + "\\" + old_file_name + ".zip ", target_dl_folder_path + "\\" + new_file_name + ".zip")
-            except os.error:
-                print("CAN NOT RENAME ", old_file_name, " -> ", new_file_name)
-            print(new_file_name + ".zip download complete")
-            # TODO unzip
-        else:
-            # TODO throw exception, file not exists
-            print(old_file_name + ".zip file NOT exists")
-        # END IF check file exists
+        # download complete until file appear in folder
+        while not os.path.exists(target_dl_folder_path + "\\" + old_file_name + ".zip"):
+            # TODO timeout
+            time.sleep(2)
+
+        # replace file name
+        try:
+            os.rename(target_dl_folder_path + "\\" + old_file_name + ".zip ", target_dl_folder_path + "\\" + new_file_name + ".zip")
+        except os.error:
+            print("CAN NOT RENAME ", old_file_name, " -> ", new_file_name)
+        
+        print("DOWNLOAD COMPLETE: ", new_file_name, ".zip")
+        
+        # TODO unzip
 
     # END for urlList
 
@@ -143,7 +144,7 @@ https://b-upp.com/en/s/312465/
 
 '''
 CN
-# https://b-upp.com/cn/s/312429/
-# https://b-upp.com/cn/s/312287/
-# https://b-upp.com/cn/s/312287/
+https://b-upp.com/cn/s/312429/
+https://b-upp.com/cn/s/312287/
+https://b-upp.com/cn/s/312287/
 '''
