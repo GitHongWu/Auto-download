@@ -7,7 +7,17 @@ import sys
 import time
 import os
 from colorama import init, Fore
-init(autoreset=True)    #init colorama
+init(autoreset=True)  #init colorama, with auto reset
+
+
+def url_validtion(driver, url):
+    try:
+        driver.get(url)
+        driver.implicitly_wait(10)
+        return True
+    except InvalidArgumentException:
+        print(Fore.RED + "INVALID URL", url)
+        return False
 
 
 def parseUrl():
@@ -30,17 +40,21 @@ def get_correct_file_name(elements, old_file_name):
         file_name = e.text
         if not "請使用現代化瀏覽器" in file_name:
             # remove char "|"
-            try:
-                index = file_name.index("|")
-                file_name = file_name[0 : index : ] + file_name[index + 1 : :]
-            except ValueError:
-                pass
+            if '|' in file_name:
+                try:
+                    index = file_name.index("|")
+                    file_name = file_name[0 : index : ] + file_name[index + 1 : :]
+                except ValueError:
+                    print(Fore.RED + 'REMOVE "|" ERROR')
+
             # remove char "!"
-            try:
-                index = file_name.index("!")
-                file_name = file_name[0 : index : ] + file_name[index + 1 : :]
-            except ValueError:
-                pass
+            if '!' in file_name:
+                try:
+                    index = file_name.index("!")
+                    file_name = file_name[0 : index : ] + file_name[index + 1 : :]
+                except ValueError:
+                    print(Fore.RED + 'REMOVE "!" ERROR')
+            
             # combine string before "[中国翻訳]" and after "[Chinese]"
             if "[中国翻訳]" in file_name and "[Chinese]" in file_name:
                 delimiter1 = "[中国翻訳]"
@@ -54,7 +68,7 @@ def get_correct_file_name(elements, old_file_name):
 
 # return True if file not exists, False for file exists
 def file_timeout(target_dl_folder_path, old_file_name, wait_time):
-    for i in range(wait_time):
+    for _ in range(wait_time):
         if os.path.exists(target_dl_folder_path + "\\" + old_file_name + ".zip "):
             return False    #file exists
         time.sleep(0.5)
@@ -67,8 +81,8 @@ def retry_task(url, urlList):
 def main():
     print("Please enter url: ")
     urlList = parseUrl()
-    # target_dl_folder_path = r"C:\Temp"
-    target_dl_folder_path = r"D:\Temp\H"    # target download folder path
+    target_dl_folder_path = r"C:\Temp"
+    # target_dl_folder_path = r"D:\Temp\H"    # target download folder path
     timeout = 10
 
     # chrome_options = Options()
@@ -85,11 +99,9 @@ def main():
     # START FOR each url in urlList
     dl_btn_id = "dl-button"
     for url in urlList:
-        try:
-            driver.get(url)
-            driver.implicitly_wait(10)
-        except InvalidArgumentException:
-            print(Fore.RED + "INVALID URL")
+
+        # check url not validtion, continue to next url
+        if not url_validtion(driver, url):
             continue
 
         try:
