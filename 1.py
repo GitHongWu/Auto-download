@@ -96,18 +96,24 @@ def main():
         driver.implicitly_wait(10)
         new_file_name = get_correct_file_name(potential_filenames)
         
-        # START while
+        # START while progessbar
         while progressbar != "100":
             progressbar = driver.find_element_by_id("progressbar").get_attribute("aria-valuenow")
             sys.stdout.write("\r{0}".format(str(progressbar) + " %"))
             sys.stdout.flush()
             time.sleep(0.5)
-        # END while
+        print()
+        # END while progessbar
 
-        # download complete until file appear in folder
-        while not os.path.exists(target_dl_folder_path + "\\" + old_file_name + ".zip"):
-            # TODO timeout
-            time.sleep(2)
+        # STRAT while loop until file appear in folder
+        timeout = 10
+        while not os.path.exists(target_dl_folder_path + "\\" + old_file_name + ".zip "):
+            if i is timeout - 1:
+                print("DOWNLOAD FAIL(TIMEOUT): " + new_file_name + ".zip")
+                break
+            i += 1
+            time.sleep(0.5)
+        # END while
 
         # replace file name
         try:
@@ -115,11 +121,13 @@ def main():
         except os.error:
             print("CAN NOT RENAME ", old_file_name, " -> ", new_file_name)
         
-        print("DOWNLOAD COMPLETE: ", new_file_name, ".zip")
+        print("DOWNLOAD COMPLETE: " + new_file_name + ".zip")
         
         # TODO unzip
 
     # END for urlList
+
+    driver.quit()
 
 
 if __name__ == '__main__':
@@ -133,8 +141,8 @@ TODO List
 3.GUI
 '''
 
-# EN
 '''
+EN
 https://b-upp.com/en/s/312266/
 https://b-upp.com/en/s/312545/
 https://b-upp.com/en/s/312257/
