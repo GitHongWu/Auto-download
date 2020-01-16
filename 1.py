@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 import sys
 import time
 import os
+from colorama import init, Fore
+init(autoreset=True)    #init colorama
 
 
 def parseUrl():
@@ -22,25 +24,52 @@ def parseUrl():
     return urlList
 
 
-def get_correct_file_name(elements):
+def get_correct_file_name(elements, old_file_name):
+    #TODO remove "|"
     for e in elements:
-        new_file_name = e.text
-        if not "請使用現代化瀏覽器" in new_file_name:
-            if "[中国翻訳]" in new_file_name and "[Chinese]" in new_file_name:
+        file_name = e.text
+        if not "請使用現代化瀏覽器" in file_name:
+            # remove char "|"
+            try:
+                index = file_name.index("|")
+                file_name = file_name[0 : index : ] + file_name[index + 1 : :]
+            except ValueError:
+                pass
+            # remove char "!"
+            try:
+                index = file_name.index("!")
+                file_name = file_name[0 : index : ] + file_name[index + 1 : :]
+            except ValueError:
+                pass
+            # combine string before "[中国翻訳]" and after "[Chinese]"
+            if "[中国翻訳]" in file_name and "[Chinese]" in file_name:
                 delimiter1 = "[中国翻訳]"
                 delimiter2 = "[Chinese]"
-                p1 = new_file_name.split(delimiter1)
-                p2 = new_file_name.split(delimiter2)
+                p1 = file_name.split(delimiter1)
+                p2 = file_name.split(delimiter2)
                 return p1[0] + p2[1]
-            return new_file_name
-    return "None"
-    
+            return file_name
+    return old_file_name + "GetNewNameError"
+
+
+# return True if file not exists, False for file exists
+def file_timeout(target_dl_folder_path, old_file_name, wait_time):
+    for i in range(wait_time):
+        if os.path.exists(target_dl_folder_path + "\\" + old_file_name + ".zip "):
+            return False    #file exists
+        time.sleep(0.5)
+    return True # file timeout
+
+
+def retry_task(url, urlList):
+    urlList.insert(0, url)
 
 def main():
     print("Please enter url: ")
     urlList = parseUrl()
-    target_dl_folder_path = r"C:\Temp"
-    # target_dl_folder_path = r"D:\Temp\H"    # target download folder path
+    # target_dl_folder_path = r"C:\Temp"
+    target_dl_folder_path = r"D:\Temp\H"    # target download folder path
+    timeout = 10
 
     # chrome_options = Options()
     chrome_options = webdriver.ChromeOptions()
@@ -60,27 +89,24 @@ def main():
             driver.get(url)
             driver.implicitly_wait(10)
         except InvalidArgumentException:
-            print("INVALID URL")
+            print(Fore.RED + "INVALID URL")
             continue
 
         try:
             driver.find_element_by_id(dl_btn_id).click()
             driver.implicitly_wait(10)
         except NoSuchElementException:
-            print("CAN NOT FIND ELEMENT: " + dl_btn_id)
+            print(Fore.RED + "CAN NOT FIND ELEMENT: " + dl_btn_id)
             continue
-        finally:
-            # driver.implicitly_wait(10)
-            pass
         
-        print("Downloading " + url + " ... ")
+        print(Fore.CYAN + "Downloading", url + " ... ")
         time.sleep(1)
         try:
             progressbar = driver.find_element_by_id("progressbar").get_attribute("aria-valuenow")
             # o = driver.find_element_by_class_name("ui-progressbar-value ui-widget-header ui-corner-left")
             driver.implicitly_wait(10)
         except NoSuchElementException:
-            print("NO PROGRESSBAR")
+            print(Fore.RED + "NO PROGRESSBAR")
             continue
         
         # old file name
@@ -88,44 +114,41 @@ def main():
         try:
             old_file_name = url_path.split("/")[3]
         except IndexError:
-            print("GET OLD FILE NAME ERROR: ", url)
-            continue
+            print(Fore.RED + "GET OLD FILE NAME FROM URL ERROR: ", url)
+            continue    # go to next url
         
         # new file name
         potential_filenames = driver.find_elements_by_class_name("alert-success")
         driver.implicitly_wait(10)
-        new_file_name = get_correct_file_name(potential_filenames)
+        new_file_name = get_correct_file_name(potential_filenames, old_file_name)
         
         # START while progessbar
+        # TODO progressbar stops, retry
         while progressbar != "100":
             progressbar = driver.find_element_by_id("progressbar").get_attribute("aria-valuenow")
             sys.stdout.write("\r{0}".format(str(progressbar) + " %"))
             sys.stdout.flush()
-            time.sleep(0.5)
+            time.sleep(1)
         print()
         # END while progessbar
 
-        # STRAT while loop until file appear in folder
-        timeout = 10
-        while not os.path.exists(target_dl_folder_path + "\\" + old_file_name + ".zip "):
-            if i is timeout - 1:
-                print("DOWNLOAD FAIL(TIMEOUT): " + new_file_name + ".zip")
-                break
-            i += 1
-            time.sleep(0.5)
-        # END while
-
-        # replace file name
-        try:
-            os.rename(target_dl_folder_path + "\\" + old_file_name + ".zip ", target_dl_folder_path + "\\" + new_file_name + ".zip")
-        except os.error:
-            print("CAN NOT RENAME ", old_file_name, " -> ", new_file_name)
-        
-        print("DOWNLOAD COMPLETE: " + new_file_name + ".zip")
-        
+        # if file exists in locol folder
+        if file_timeout(target_dl_folder_path, old_file_name, timeout):  # NOT exists, 3rd arg represent timeout second*2
+            print(Fore.RED + "DOWNLOAD FAIL", new_file_name)
+            print(Fore.CYAN + "RE-DOWNLOAD ...")
+            retry_task(url, urlList)
+        else:   # file exists
+            # replace file name
+            try:
+                os.rename(target_dl_folder_path + "\\" + old_file_name + ".zip ", target_dl_folder_path + "\\" + new_file_name + ".zip")
+            except os.error:
+                print(Fore.YELLOW + "CAN NOT RENAME ", old_file_name, " -> ", new_file_name)
+            finally:
+                print(Fore.GREEN + 'DOWNLOAD COMPLETE', new_file_name + ".zip")
+                
         # TODO unzip
 
-    # END for urlList
+    # END FOR LOOP urlList
 
     driver.quit()
 
