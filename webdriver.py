@@ -1,7 +1,8 @@
 from selenium import webdriver
 from selenium.common.exceptions import InvalidArgumentException
 
-url = "https://b-upp.com/cn/d/312429/"
+# url = "https://b-upp.com/cn/s/312429/"
+url = 'https://www.google.com/'
 # url = "asd"
 driver = webdriver.Chrome()
 driver.implicitly_wait(10)

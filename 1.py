@@ -1,13 +1,27 @@
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import InvalidArgumentException
 # from selenium.webdriver.chrome.options import Options
-from urllib.parse import urlparse
 import sys
 import time
 import os
+from urllib.parse import urlparse
 from colorama import init, Fore
-init(autoreset=True)  #init colorama, with auto reset
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import InvalidArgumentException
+init(autoreset=True)  # init colorama, with auto reset
+
+
+def get_urls():
+    urlList = []
+    url = input('Please enter url: ')
+    while url != "-1":
+        urlParts = urlparse(url)
+        path = urlParts.path.replace("s", "d")
+        # path = path.replace("s", "d")
+        urlParts = urlParts._replace(path=path)
+        url = urlParts.geturl()
+        urlList.append(url)
+        url = input('Please enter url: ')
+    return urlList
 
 
 def url_validtion(driver, url):
@@ -20,22 +34,29 @@ def url_validtion(driver, url):
         return False
 
 
-def parseUrl():
-    urlList = []
-    url = input()
-    while url != "-1":
-        urlParts = urlparse(url)
-        path = urlParts.path
-        path = path.replace("s", "d")
-        urlParts = urlParts._replace(path=path)
-        url = urlParts.geturl()
-        urlList.append(url)
-        url = input()
-    return urlList
+def find_dl_btn(driver, btn_id):
+    try:
+        driver.find_element_by_id(btn_id).click()
+        driver.implicitly_wait(10)
+        return True
+    except NoSuchElementException:
+        print(Fore.RED + "CAN NOT FIND ELEMENT: " + btn_id)
+        return False
+
+
+def find_attribute_by_element_id(driver, element_id, attribute):
+    try:
+        driver.find_element_by_id(element_id).get_attribute(attribute)
+        # o = driver.find_element_by_class_name("ui-progressbar-value ui-widget-header ui-corner-left")
+        driver.implicitly_wait(10)
+        return True
+    except NameError:
+        print(Fore.RED + 'CAN NOT FIND ATTRIBUTE', ": " + attribute)
+        return False
 
 
 def get_correct_file_name(elements, old_file_name):
-    #TODO remove "|"
+    # TODO remove "|"
     for e in elements:
         file_name = e.text
         if not "請使用現代化瀏覽器" in file_name:
@@ -43,7 +64,7 @@ def get_correct_file_name(elements, old_file_name):
             if '|' in file_name:
                 try:
                     index = file_name.index("|")
-                    file_name = file_name[0 : index : ] + file_name[index + 1 : :]
+                    file_name = file_name[0: index:] + file_name[index + 1::]
                 except ValueError:
                     print(Fore.RED + 'REMOVE "|" ERROR')
 
@@ -51,10 +72,10 @@ def get_correct_file_name(elements, old_file_name):
             if '!' in file_name:
                 try:
                     index = file_name.index("!")
-                    file_name = file_name[0 : index : ] + file_name[index + 1 : :]
+                    file_name = file_name[0: index:] + file_name[index + 1::]
                 except ValueError:
                     print(Fore.RED + 'REMOVE "!" ERROR')
-            
+
             # combine string before "[中国翻訳]" and after "[Chinese]"
             if "[中国翻訳]" in file_name and "[Chinese]" in file_name:
                 delimiter1 = "[中国翻訳]"
@@ -70,17 +91,16 @@ def get_correct_file_name(elements, old_file_name):
 def file_timeout(target_dl_folder_path, old_file_name, wait_time):
     for _ in range(wait_time):
         if os.path.exists(target_dl_folder_path + "\\" + old_file_name + ".zip "):
-            return False    #file exists
+            return False  # file exists
         time.sleep(0.5)
-    return True # file timeout
+    return True  # file timeout
 
 
 def retry_task(url, urlList):
     urlList.insert(0, url)
 
+
 def main():
-    print("Please enter url: ")
-    urlList = parseUrl()
     target_dl_folder_path = r"C:\Temp"
     # target_dl_folder_path = r"D:\Temp\H"    # target download folder path
     timeout = 10
@@ -88,79 +108,85 @@ def main():
     # chrome_options = Options()
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--disable-gpu")
-    prefs = {"download.default_directory" : target_dl_folder_path}
+    prefs = {"download.default_directory": target_dl_folder_path}
     chrome_options.add_experimental_option('prefs', prefs)
     # chrome_options.add_experimental_option("detach", True)  # keep brower open
-    chrome_options.add_argument("--headless") # keep brower close
+    chrome_options.add_argument("--headless")  # keep brower close
     driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(10)
     # driver.maximize_window()
 
-    # START FOR each url in urlList
-    dl_btn_id = "dl-button"
-    for url in urlList:
+    while True:
+        urlList = get_urls()
 
-        # check url not validtion, continue to next url
-        if not url_validtion(driver, url):
-            continue
+        # START FOR each url in urlList
+        for url in urlList:
 
-        try:
-            driver.find_element_by_id(dl_btn_id).click()
-            driver.implicitly_wait(10)
-        except NoSuchElementException:
-            print(Fore.RED + "CAN NOT FIND ELEMENT: " + dl_btn_id)
-            continue
-        
-        print(Fore.CYAN + "Downloading", url + " ... ")
-        time.sleep(1)
-        try:
-            progressbar = driver.find_element_by_id("progressbar").get_attribute("aria-valuenow")
-            # o = driver.find_element_by_class_name("ui-progressbar-value ui-widget-header ui-corner-left")
-            driver.implicitly_wait(10)
-        except NoSuchElementException:
-            print(Fore.RED + "NO PROGRESSBAR")
-            continue
-        
-        # old file name
-        url_path = urlparse(url).path
-        try:
-            old_file_name = url_path.split("/")[3]
-        except IndexError:
-            print(Fore.RED + "GET OLD FILE NAME FROM URL ERROR: ", url)
-            continue    # go to next url
-        
-        # new file name
-        potential_filenames = driver.find_elements_by_class_name("alert-success")
-        driver.implicitly_wait(10)
-        new_file_name = get_correct_file_name(potential_filenames, old_file_name)
-        
-        # START while progessbar
-        # TODO progressbar stops, retry
-        while progressbar != "100":
-            progressbar = driver.find_element_by_id("progressbar").get_attribute("aria-valuenow")
-            sys.stdout.write("\r{0}".format(str(progressbar) + " %"))
-            sys.stdout.flush()
+            # check url not validtion, continue to next url
+            if not url_validtion(driver, url):
+                continue
+
+            # check download btn if found
+            if not find_dl_btn(driver, "dl-button"):
+                continue
+
+            print(Fore.CYAN + "Downloading", url + " ... ")
             time.sleep(1)
-        print()
-        # END while progessbar
+            # TODO set timeout
 
-        # if file exists in locol folder
-        if file_timeout(target_dl_folder_path, old_file_name, timeout):  # NOT exists, 3rd arg represent timeout second*2
-            print(Fore.RED + "DOWNLOAD FAIL", new_file_name)
-            print(Fore.CYAN + "RE-DOWNLOAD ...")
-            retry_task(url, urlList)
-        else:   # file exists
-            # replace file name
+            # old file name
+            url_path = urlparse(url).path
             try:
-                os.rename(target_dl_folder_path + "\\" + old_file_name + ".zip ", target_dl_folder_path + "\\" + new_file_name + ".zip")
-            except os.error:
-                print(Fore.YELLOW + "CAN NOT RENAME ", old_file_name, " -> ", new_file_name)
-            finally:
-                print(Fore.GREEN + 'DOWNLOAD COMPLETE', new_file_name + ".zip")
-                
-        # TODO unzip
+                old_file_name = url_path.split("/")[3]
+            except IndexError:
+                print(Fore.RED + "GET OLD FILE NAME FROM URL ERROR: ", url)
+                continue    # go to next url
 
-    # END FOR LOOP urlList
+            # new file name
+            potential_filenames = driver.find_elements_by_class_name(
+                "alert-success")
+            driver.implicitly_wait(10)
+            new_file_name = get_correct_file_name(
+                potential_filenames, old_file_name)
+
+            # check progress value if found
+            if not find_attribute_by_element_id(driver, "progressbar", "aria-valuenow"):
+                continue
+
+            # START while progessbar
+            # TODO progressbar stops, retry
+            progressbar_value = 'None'    # init progressbar
+            while progressbar_value != "100":
+                progressbar_value = driver.find_element_by_id(
+                    "progressbar").get_attribute("aria-valuenow")
+                sys.stdout.write("\r{0}".format(str(progressbar_value) + " %"))
+                sys.stdout.flush()
+                time.sleep(1)
+            print()
+            # END while progessbar
+
+            # if file exists in locol folder
+            # NOT exists, 3rd arg represent timeout second*2
+            if file_timeout(target_dl_folder_path, old_file_name, timeout):
+                print(Fore.RED + "DOWNLOAD FAIL", new_file_name)
+                print(Fore.CYAN + "RE-DOWNLOAD ...")
+                retry_task(url, urlList)
+            else:   # file exists
+                # replace file name
+                try:
+                    os.rename(target_dl_folder_path + "\\" + old_file_name + ".zip ",
+                              target_dl_folder_path + "\\" + new_file_name + ".zip")
+                except os.error:
+                    print(Fore.YELLOW + "CAN NOT RENAME ",
+                          old_file_name, " -> ", new_file_name)
+                finally:
+                    print(Fore.GREEN + 'DOWNLOAD COMPLETE',
+                          new_file_name + ".zip")
+
+            # TODO unzip
+
+        # END FOR LOOP urlList
+    # END WHILE True
 
     driver.quit()
 
