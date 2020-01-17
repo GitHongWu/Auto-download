@@ -16,10 +16,9 @@ def get_urls():
     while url != "-1":
         urlParts = urlparse(url)
         path = urlParts.path.replace("s", "d")
-        # path = path.replace("s", "d")
-        urlParts = urlParts._replace(path=path)
-        url = urlParts.geturl()
-        urlList.append(url)
+        # TODO Dont replace 's', replace path.spilt('/')[2]
+        urlParts = urlParts._replace(path=path) # replace url path
+        urlList.append(urlParts.geturl())
         url = input('Please enter url: ')
     return urlList
 
@@ -101,8 +100,11 @@ def retry_task(url, urlList):
 
 
 def main():
-    target_dl_folder_path = r"C:\Temp"
-    # target_dl_folder_path = r"D:\Temp\H"    # target download folder path
+    if input('c or d: ') is 'd':
+        target_dl_folder_path = r"D:\Temp\H"    # target download folder path
+    else:
+        target_dl_folder_path = r"C:\Temp"
+
     timeout = 10
 
     # chrome_options = Options()
@@ -132,7 +134,22 @@ def main():
 
             print(Fore.CYAN + "Downloading", url + " ... ")
             time.sleep(1)
-            # TODO set timeout
+            # TODO set timeout until next element not 'None'
+            # check progress value if found
+            if not find_attribute_by_element_id(driver, "progressbar", "aria-valuenow"):
+                continue
+
+            # START while progessbar
+            # TODO progressbar stops, retry
+            progressbar_value = '0'    # init progressbar
+            while progressbar_value != "100":
+                progressbar_value = driver.find_element_by_id(
+                    "progressbar").get_attribute("aria-valuenow")
+                sys.stdout.write("\r{0}".format(str(progressbar_value)[:5] + " %"))
+                sys.stdout.flush()
+                time.sleep(1)
+            print()
+            # END while progessbar
 
             # old file name
             url_path = urlparse(url).path
@@ -146,24 +163,7 @@ def main():
             potential_filenames = driver.find_elements_by_class_name(
                 "alert-success")
             driver.implicitly_wait(10)
-            new_file_name = get_correct_file_name(
-                potential_filenames, old_file_name)
-
-            # check progress value if found
-            if not find_attribute_by_element_id(driver, "progressbar", "aria-valuenow"):
-                continue
-
-            # START while progessbar
-            # TODO progressbar stops, retry
-            progressbar_value = 'None'    # init progressbar
-            while progressbar_value != "100":
-                progressbar_value = driver.find_element_by_id(
-                    "progressbar").get_attribute("aria-valuenow")
-                sys.stdout.write("\r{0}".format(str(progressbar_value) + " %"))
-                sys.stdout.flush()
-                time.sleep(1)
-            print()
-            # END while progessbar
+            new_file_name = get_correct_file_name(potential_filenames, old_file_name)
 
             # if file exists in locol folder
             # NOT exists, 3rd arg represent timeout second*2
@@ -178,7 +178,7 @@ def main():
                               target_dl_folder_path + "\\" + new_file_name + ".zip")
                 except os.error:
                     print(Fore.YELLOW + "CAN NOT RENAME ",
-                          old_file_name, " -> ", new_file_name)
+                          old_file_name + " -> " + new_file_name)
                 finally:
                     print(Fore.GREEN + 'DOWNLOAD COMPLETE',
                           new_file_name + ".zip")
