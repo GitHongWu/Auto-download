@@ -55,7 +55,6 @@ def find_attribute_by_element_id(driver, element_id, attribute):
 
 
 def get_correct_file_name(elements, old_file_name):
-    # TODO remove "|"
     for e in elements:
         file_name = e.text
         if not "請使用現代化瀏覽器" in file_name:
@@ -74,6 +73,22 @@ def get_correct_file_name(elements, old_file_name):
                     file_name = file_name[0: index:] + file_name[index + 1::]
                 except ValueError:
                     print(Fore.RED + 'REMOVE "!" ERROR')
+
+            # remove char "/"
+            if '/' in file_name:
+                try:
+                    index = file_name.index('/')
+                    file_name = file_name[0: index:] + file_name[index + 1::]
+                except ValueError:
+                    print(Fore.RED + 'REMOVE "/" ERROR')
+
+            # remove char ":"
+            if ':' in file_name:
+                try:
+                    index = file_name.index(':')
+                    file_name = file_name[0: index:] + file_name[index + 1::]
+                except ValueError:
+                    print(Fore.RED + 'REMOVE ":" ERROR')
 
             # combine string before "[中国翻訳]" and after "[Chinese]"
             if "[中国翻訳]" in file_name and "[Chinese]" in file_name:
@@ -135,6 +150,7 @@ def main():
             print(Fore.CYAN + "Downloading", url + " ... ")
             time.sleep(1)
             # TODO set timeout until next element not 'None'
+
             # check progress value if found
             if not find_attribute_by_element_id(driver, "progressbar", "aria-valuenow"):
                 continue
