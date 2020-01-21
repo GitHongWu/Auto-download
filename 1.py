@@ -101,6 +101,17 @@ def get_correct_file_name(elements, old_file_name):
     return old_file_name + "GetNewNameError"
 
 
+# set timeout until next element not 'None'
+def progressbar_timeout(driver, element_id, attribute, wait_time):
+    for _ in range(wait_time): # check progress value if found
+        if find_attribute_by_element_id(driver, element_id, attribute) is not 'None':
+            print('found attribute')
+            return False
+        time.sleep(0.5)
+        print(find_attribute_by_element_id(driver, element_id, attribute))
+    return True # find attribute time out
+        
+
 # return True if file not exists, False for file exists
 def file_timeout(target_dl_folder_path, old_file_name, wait_time):
     for _ in range(wait_time):
@@ -149,15 +160,13 @@ def main():
 
             print(Fore.CYAN + "Downloading", url + " ... ")
             time.sleep(1)
-            # TODO set timeout until next element not 'None'
 
-            # check progress value if found
-            if not find_attribute_by_element_id(driver, "progressbar", "aria-valuenow"):
+            if progressbar_timeout(driver, "progressbar", "aria-valuenow", timeout):
                 continue
 
             # START while progessbar
-            # TODO progressbar stops, retry
-            progressbar_value = '0'    # init progressbar
+            # TODO progressbar stops downloadning stop, retry
+            progressbar_value = '0.000'    # init progressbar
             while progressbar_value != "100":
                 progressbar_value = driver.find_element_by_id(
                     "progressbar").get_attribute("aria-valuenow")
@@ -181,7 +190,7 @@ def main():
             driver.implicitly_wait(10)
             new_file_name = get_correct_file_name(potential_filenames, old_file_name)
 
-            # if file exists in locol folder
+            # check if file exists in locol folder
             # NOT exists, 3rd arg represent timeout second*2
             if file_timeout(target_dl_folder_path, old_file_name, timeout):
                 print(Fore.RED + "DOWNLOAD FAIL", new_file_name)
