@@ -105,7 +105,7 @@ def get_correct_file_name(elements, old_file_name):
 def progressbar_timeout(driver, element_id, attribute, wait_time):
     for _ in range(wait_time): # check progress value if found
         if find_attribute_by_element_id(driver, element_id, attribute) is not 'None':
-            print('found attribute')
+            # print('found attribute')
             return False
         time.sleep(0.5)
         print(find_attribute_by_element_id(driver, element_id, attribute))
