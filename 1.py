@@ -17,7 +17,7 @@ def get_urls():
         urlParts = urlparse(url)
         path = urlParts.path.replace("s", "d")
         # TODO Dont replace 's', replace path.spilt('/')[2]
-        urlParts = urlParts._replace(path=path) # replace url path
+        urlParts = urlParts._replace(path=path)  # replace url path
         urlList.append(urlParts.geturl())
         url = input('Please enter url: ')
     return urlList
@@ -54,41 +54,25 @@ def find_attribute_by_element_id(driver, element_id, attribute):
         return False
 
 
+def remove_special_char(file_name):
+    special_char = {'!', '?', '|', '/', ':', '！', '？'}
+    for char in file_name:
+        if char in special_char:
+            try:
+                index = file_name.index(char)
+                file_name = file_name[0: index:] + file_name[index + 1::]
+            except ValueError:
+                print(Fore.RED + 'REMOVE ' + char + ' ERROR')
+    # END For
+    return file_name
+
+
 def get_correct_file_name(elements, old_file_name):
     for e in elements:
         file_name = e.text
         if not "請使用現代化瀏覽器" in file_name:
-            # remove char "|"
-            if '|' in file_name:
-                try:
-                    index = file_name.index("|")
-                    file_name = file_name[0: index:] + file_name[index + 1::]
-                except ValueError:
-                    print(Fore.RED + 'REMOVE "|" ERROR')
-
-            # remove char "!"
-            if '!' in file_name:
-                try:
-                    index = file_name.index("!")
-                    file_name = file_name[0: index:] + file_name[index + 1::]
-                except ValueError:
-                    print(Fore.RED + 'REMOVE "!" ERROR')
-
-            # remove char "/"
-            if '/' in file_name:
-                try:
-                    index = file_name.index('/')
-                    file_name = file_name[0: index:] + file_name[index + 1::]
-                except ValueError:
-                    print(Fore.RED + 'REMOVE "/" ERROR')
-
-            # remove char ":"
-            if ':' in file_name:
-                try:
-                    index = file_name.index(':')
-                    file_name = file_name[0: index:] + file_name[index + 1::]
-                except ValueError:
-                    print(Fore.RED + 'REMOVE ":" ERROR')
+            # remove special symbols, so can rename later
+            file_name = remove_special_char(file_name)
 
             # combine string before "[中国翻訳]" and after "[Chinese]"
             if "[中国翻訳]" in file_name and "[Chinese]" in file_name:
@@ -103,14 +87,14 @@ def get_correct_file_name(elements, old_file_name):
 
 # set timeout until next element not 'None'
 def progressbar_timeout(driver, element_id, attribute, wait_time):
-    for _ in range(wait_time): # check progress value if found
+    for _ in range(wait_time):  # check progress value if found
         if find_attribute_by_element_id(driver, element_id, attribute) is not 'None':
             # print('found attribute')
             return False
         time.sleep(0.5)
         print(find_attribute_by_element_id(driver, element_id, attribute))
-    return True # find attribute time out
-        
+    return True  # find attribute time out
+
 
 # return True if file not exists, False for file exists
 def file_timeout(target_dl_folder_path, old_file_name, wait_time):
@@ -170,7 +154,8 @@ def main():
             while progressbar_value != "100":
                 progressbar_value = driver.find_element_by_id(
                     "progressbar").get_attribute("aria-valuenow")
-                sys.stdout.write("\r{0}".format(str(progressbar_value)[:5] + " %"))
+                sys.stdout.write("\r{0}".format(
+                    str(progressbar_value)[:5] + " %"))
                 sys.stdout.flush()
                 time.sleep(1)
             print()
@@ -188,7 +173,8 @@ def main():
             potential_filenames = driver.find_elements_by_class_name(
                 "alert-success")
             driver.implicitly_wait(10)
-            new_file_name = get_correct_file_name(potential_filenames, old_file_name)
+            new_file_name = get_correct_file_name(
+                potential_filenames, old_file_name)
 
             # check if file exists in locol folder
             # NOT exists, 3rd arg represent timeout second*2
