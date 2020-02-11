@@ -122,8 +122,8 @@ def main():
     chrome_options.add_argument("--disable-gpu")
     prefs = {"download.default_directory": target_dl_folder_path}
     chrome_options.add_experimental_option('prefs', prefs)
-    # chrome_options.add_experimental_option("detach", True)  # keep brower open
-    chrome_options.add_argument("--headless")  # keep brower close
+    chrome_options.add_experimental_option("detach", True)  # keep brower open
+    # chrome_options.add_argument("--headless")  # keep brower close
     driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(10)
     # driver.maximize_window()
@@ -159,6 +159,7 @@ def main():
                 sys.stdout.flush()
                 time.sleep(1)
             print()
+            time.sleep(1)
             # END while progessbar
 
             # old file name
@@ -208,8 +209,8 @@ if __name__ == '__main__':
 
 '''
 TODO List
-1.report
-2.multiple tasks
+1.generate report
+2.multiple threads
 3.GUI
 '''
 
