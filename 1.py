@@ -113,7 +113,7 @@ def main():
     if input('c or d: ') is 'd':
         target_dl_folder_path = r"D:\Temp\H"    # target download folder path
     else:
-        target_dl_folder_path = r"C:\Temp"
+        target_dl_folder_path = r"C:\Temp\H"
 
     timeout = 10
 
@@ -122,8 +122,8 @@ def main():
     chrome_options.add_argument("--disable-gpu")
     prefs = {"download.default_directory": target_dl_folder_path}
     chrome_options.add_experimental_option('prefs', prefs)
-    chrome_options.add_experimental_option("detach", True)  # keep brower open
-    # chrome_options.add_argument("--headless")  # keep brower close
+    # chrome_options.add_experimental_option("detach", True)  # keep brower open
+    chrome_options.add_argument("--headless")  # keep brower close
     driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(10)
     # driver.maximize_window()
